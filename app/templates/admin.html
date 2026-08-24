@@ -1,0 +1,284 @@
+{% extends "base.html" %}
+{% block title %}Control panel &mdash; {{ site_name }}{% endblock %}
+{% block content %}
+{% set t = stats.totals %}
+{% macro pct(x) %}{{ '%.1f'|format(x * 100) }}%{% endmacro %}
+{% macro tok() %}token={{ token }}{% endmacro %}
+
+{% if flash %}<p class="flash">{{ flash }}</p>{% endif %}
+
+<h1>Control panel</h1>
+<p class="sub">Funnel over {{ stats.window_days }} days ·
+  {% for d in [1, 7, 30, 90] %}<a href="/admin?days={{ d }}&hours={{ hours }}&{{ tok() }}">{{ d }}d</a>{% if not loop.last %} · {% endif %}{% endfor %}
+</p>
+
+{# ------------------------------------------------------- ad campaigns #}
+<h2 class="section">Ad campaigns</h2>
+{% set stop = campaign_health | selectattr('status', 'in', ['no_fill', 'degraded']) | list %}
+{% if stop %}
+  <p class="alarm"><strong>Stop spending on
+    {{ stop | map(attribute='id') | join(', ') }}.</strong>
+    Paid traffic is landing with no offer to show it.</p>
+{% endif %}
+
+{% if campaign_health %}
+<div class="scroll">
+<table class="grid">
+  <thead><tr><th>Campaign</th><th>Status</th><th>Landings</th><th>Pinned</th>
+             <th>Fallback</th><th>No fill</th><th></th></tr></thead>
+  <tbody>
+  {% for c in campaign_health %}
+    <tr>
+      <td>
+        <strong>{{ c.id }}</strong>{% if c.label %} <span class="hint">{{ c.label }}</span>{% endif %}
+        <br><span class="hint adurl">{{ site_base }}/lp/{{ c.id }}</span>
+        {% if c.pinned_offer_id %}<br><span class="hint">pinned to offer #{{ c.pinned_offer_id }}</span>{% endif %}
+      </td>
+      <td><span class="badge {{ c.status }}">{{ c.status.replace('_', ' ') }}</span></td>
+      <td class="n">{{ c.landings }}</td>
+      <td class="n">{{ c.pinned }}</td>
+      <td class="n">{{ c.fallback }}</td>
+      <td class="n">{{ c.no_fill }}</td>
+      <td class="n">
+        <form method="post" action="/admin/campaigns/toggle?{{ tok() }}">
+          <input type="hidden" name="campaign_id" value="{{ c.id }}">
+          <input type="hidden" name="active" value="{{ 0 if c.active else 1 }}">
+          <button class="mini">{{ 'Pause' if c.active else 'Resume' }}</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p class="hint">Status meanings — <strong>ok</strong>: serving the pinned offer.
+  <strong>fallback</strong>/<strong>pinned dead</strong>: the pinned offer capped, an
+  alternative is serving, revenue continues.
+  <strong>degraded</strong>: some landings got nothing.
+  <strong>no fill</strong>: nothing servable — pause the ad set.</p>
+{% else %}
+  <p class="notice">No campaigns yet. Create one below, then point your ad at its
+    <code>/lp/&lt;id&gt;</code> URL rather than at an offer — that is what lets a capped
+    offer fall back instead of burning clicks.</p>
+{% endif %}
+
+<form class="card-form" method="post" action="/admin/campaigns?{{ tok() }}">
+  <h3>New or updated campaign</h3>
+  <label>Campaign id <span class="hint">used in the ad URL</span>
+    <input name="campaign_id" required placeholder="tiktok-ios-us" pattern="[A-Za-z0-9_\-]+"></label>
+  <label>Label <span class="hint">optional, for you</span>
+    <input name="label" placeholder="TikTok iOS, US, August"></label>
+  <label>Pin to offer id <span class="hint">blank = always serve the best available</span>
+    <input name="pinned_offer_id" inputmode="numeric" placeholder="75449"></label>
+  <div class="row2">
+    <label>Country <input name="target_country" maxlength="2" placeholder="US"></label>
+    <label>Device <input name="target_device" placeholder="mobile"></label>
+  </div>
+  <button class="btn small">Save campaign</button>
+</form>
+
+{# ------------------------------------------------------------- funnel #}
+<h2 class="section">Funnel</h2>
+<div class="kpis">
+  <div class="kpi"><b>{{ t.visits }}</b><span>visits</span></div>
+  <div class="kpi"><b>{{ t.clicks }}</b><span>offer clicks</span></div>
+  <div class="kpi"><b>{{ t.conversions }}</b><span>conversions</span></div>
+  <div class="kpi"><b>${{ '%.2f'|format(t.revenue) }}</b><span>revenue</span></div>
+  <div class="kpi"><b>{{ pct(t.click_through_rate) }}</b><span>visit &rarr; click</span></div>
+  <div class="kpi"><b>{{ pct(t.conversion_rate) }}</b><span>click &rarr; conv.</span></div>
+  <div class="kpi"><b>${{ '%.3f'|format(t.revenue_per_visit) }}</b><span>per visit</span></div>
+</div>
+<p class="hint">Revenue-share offers fire several postbacks per user, so
+  conversions can legitimately exceed clicks on an RS-heavy mix.</p>
+
+<h2 class="section">By source <span class="hint">aff_sub4 — the <code>?v=</code> on each link</span></h2>
+{% if stats.by_source %}
+<div class="scroll"><table class="grid">
+  <thead><tr><th>Source</th><th>Visits</th><th>Clicks</th><th>Conv.</th><th>Revenue</th><th>Rev/visit</th></tr></thead>
+  <tbody>
+  {% for r in stats.by_source %}
+    <tr><td>{{ r.source or '(none)' }}</td>
+      <td class="n">{{ r.visits }}</td><td class="n">{{ r.clicks }}</td>
+      <td class="n">{{ r.conversions }}</td><td class="n">${{ '%.2f'|format(r.revenue) }}</td>
+      <td class="n">{{ '$%.3f'|format(r.revenue / r.visits) if r.visits else '—' }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="notice">No traffic recorded yet.</p>{% endif %}
+
+<h2 class="section">By offer</h2>
+{% if stats.by_offer %}
+<div class="scroll"><table class="grid">
+  <thead><tr><th>Offer</th><th>Clicks</th><th>Conv.</th><th>Revenue</th></tr></thead>
+  <tbody>
+  {% for r in stats.by_offer %}
+    <tr><td>{{ r.offer_name or r.offer_id }} <span class="hint">#{{ r.offer_id }}</span></td>
+      <td class="n">{{ r.clicks }}</td><td class="n">{{ r.conversions }}</td>
+      <td class="n">${{ '%.2f'|format(r.revenue) }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="notice">No clicks recorded yet.</p>{% endif %}
+
+{# ------------------------------------------------------- availability #}
+<h2 class="section">Offer availability</h2>
+<p class="hint">OGAds has no status field — an offer that stops appearing has capped,
+  paused or been pulled. "Last seen" is how long ago we last saw it offered to that audience.</p>
+{% if availability %}
+<div class="scroll"><table class="grid">
+  <thead><tr><th>Offer</th><th>Audience</th><th>Payout</th><th>EPC</th><th>Last seen</th></tr></thead>
+  <tbody>
+  {% for a in availability %}
+    <tr class="{{ '' if a.live else 'gone' }}">
+      <td>{{ a.name or a.offer_id }} <span class="hint">#{{ a.offer_id }}</span></td>
+      <td class="n">{{ a.country or '??' }} / {{ a.device or '?' }}</td>
+      <td class="n">${{ '%.2f'|format(a.payout) }}</td>
+      <td class="n">{{ '%.4f'|format(a.epc) }}</td>
+      <td class="n">{% if a.live %}<span class="badge ok">live</span>
+        {% else %}<span class="badge gone">{{ (a.age_seconds // 3600) }}h ago</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table></div>
+{% else %}<p class="notice">Nothing seen yet — load the site once to populate this.</p>{% endif %}
+
+{# ------------------------------------------------------------ sources #}
+<h2 class="section">Where visitors come from</h2>
+<div class="two">
+  <div>
+    <div class="scroll"><table class="grid">
+      <thead><tr><th>Referrer</th><th>Visits</th></tr></thead>
+      <tbody>{% for r in stats.by_referrer %}<tr><td>{{ r.host }}</td><td class="n">{{ r.visits }}</td></tr>
+      {% else %}<tr><td colspan="2" class="hint">nothing yet</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="hint">In-app browsers (TikTok included) usually send no referrer — which is
+       why <code>?v=</code> carries the attribution instead.</p>
+  </div>
+  <div>
+    <div class="scroll"><table class="grid">
+      <thead><tr><th>Country</th><th>Visits</th></tr></thead>
+      <tbody>{% for r in stats.by_country %}<tr><td>{{ r.country }}</td><td class="n">{{ r.visits }}</td></tr>
+      {% else %}<tr><td colspan="2" class="hint">nothing yet</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <div class="scroll"><table class="grid">
+      <thead><tr><th>Device</th><th>Visits</th></tr></thead>
+      <tbody>{% for r in stats.by_device %}<tr><td>{{ r.device }}</td><td class="n">{{ r.visits }}</td></tr>
+      {% else %}<tr><td colspan="2" class="hint">nothing yet</td></tr>{% endfor %}</tbody>
+    </table></div>
+    <p class="hint">Country needs a CDN edge header (Cloudflare <code>CF-IPCountry</code>).</p>
+  </div>
+</div>
+
+<h2 class="section">Recent conversions</h2>
+{% if stats.recent_conversions %}
+<div class="scroll"><table class="grid">
+  <thead><tr><th>Offer</th><th>Source</th><th>Payout</th></tr></thead>
+  <tbody>{% for r in stats.recent_conversions %}
+    <tr><td>{{ r.offer_name or r.offer_id }}</td><td>{{ r.source or '(none)' }}</td>
+        <td class="n">${{ '%.2f'|format(r.payout) }}</td></tr>{% endfor %}</tbody>
+</table></div>
+{% else %}
+<p class="notice">No postbacks yet. Conversions appear once the postback URL is saved in
+  OGAds <em>and</em> this server is reachable publicly — localhost can never receive one.</p>
+{% endif %}
+
+<h2 class="section">Gameplay videos &amp; store data</h2>
+{% if not youtube_ready %}
+  <p class="notice">No <code>YOUTUBE_API_KEY</code> set, so videos are not discovered
+    automatically — but you can pin one per offer below and attribution still works.
+    Get a key at console.cloud.google.com → enable “YouTube Data API v3” → API key,
+    then add it to <code>.env</code> and run
+    <code>tools/prefetch_media.py</code>.</p>
+{% endif %}
+{% if media_rows %}
+<div class="scroll">
+<table class="grid">
+  <thead><tr><th>Offer</th><th>Store</th><th>Listing</th><th>Video</th><th></th></tr></thead>
+  <tbody>
+  {% for m in media_rows %}
+    <tr>
+      <td>#{{ m.offer_id }}</td>
+      <td class="n">{{ m.storefront|upper }}</td>
+      <td class="n">{% if m.has_app %}<span class="badge ok">yes</span>
+        {% else %}<span class="hint">none</span>{% endif %}</td>
+      <td class="n">{% if m.video_id %}<span class="badge {{ 'ok' if m.pinned else 'fallback' }}">{{ 'pinned' if m.pinned else 'auto' }}</span>
+        {% else %}<span class="hint">none</span>{% endif %}</td>
+      <td class="n">
+        <form method="post" action="/admin/media/clear?{{ tok() }}">
+          <input type="hidden" name="offer_id" value="{{ m.offer_id }}">
+          <input type="hidden" name="storefront" value="{{ m.storefront }}">
+          <button class="mini">Clear</button>
+        </form>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+  <p class="notice">Nothing cached yet. Run
+    <code>./.venv/bin/python tools/prefetch_media.py --all-storefronts</code>.</p>
+{% endif %}
+
+<form class="card-form" method="post" action="/admin/media/art?{{ tok() }}">
+  <h3>Your own artwork for an offer</h3>
+  <p class="hint" style="margin-bottom:12px">Overrides the fetched app icon and adds a
+     wide hero image. Survives media refreshes. Drop files in
+     <code>app/static/art/</code> and reference them as
+     <code>/static/art/&lt;file&gt;</code>, or paste an https:// URL.<br>
+     <strong>Icon</strong> 512&times;512 square. <strong>Hero</strong> 1200&times;630
+     (any wide ratio works; it renders full width).</p>
+  <div class="row2">
+    <label>Offer id <input name="offer_id" required placeholder="75449" inputmode="numeric"></label>
+    <label>Storefront <input name="storefront" maxlength="2" placeholder="dk" required></label>
+  </div>
+  <label>Icon URL or path <input name="custom_icon" placeholder="/static/art/75449-icon.png"></label>
+  <label>Hero URL or path <input name="custom_hero" placeholder="/static/art/75449-hero.png"></label>
+  <button class="btn small">Save artwork</button>
+</form>
+
+<form class="card-form" method="post" action="/admin/media/pin?{{ tok() }}">
+  <h3>Pin a gameplay video</h3>
+  <p class="hint" style="margin-bottom:12px">Verified before saving — private, removed,
+     or embedding-disabled videos are rejected rather than rendering as a black box.
+     A pinned video is never replaced automatically.</p>
+  <div class="row2">
+    <label>Offer id <input name="offer_id" required placeholder="75449" inputmode="numeric"></label>
+    <label>Storefront <input name="storefront" maxlength="2" placeholder="dk" required></label>
+  </div>
+  <label>YouTube URL or id
+    <input name="video_url" required placeholder="https://www.youtube.com/watch?v=..."></label>
+  <button class="btn small">Pin video</button>
+</form>
+
+<h2 class="section">Connection &amp; domain</h2>
+<form class="card-form" method="post" action="/admin/settings?{{ tok() }}">
+  <h3>OGAds credentials</h3>
+  <p class="hint" style="margin-bottom:12px">Current key: <code>{{ ogads.api_key_masked }}</code>.
+     A new key is tested against the live API before it is saved — if it fails,
+     nothing changes.</p>
+  <label>API key <span class="hint">leave blank to keep the current one</span>
+    <input name="api_key" type="password" autocomplete="off" placeholder="••••••••"></label>
+  <label>API endpoint
+    <input name="endpoint" value="{{ ogads.endpoint }}"></label>
+  <h3 style="margin-top:20px">Landing domain</h3>
+  <p class="hint" style="margin-bottom:12px">Used to build the postback URL and every
+     landing URL the export tool writes. Set this the day you point a real domain here.</p>
+  <label>Public base URL <span class="hint">origin only, e.g. https://example.com</span>
+    <input name="site_base_url" value="{{ site_base }}" placeholder="https://example.com"></label>
+  <button class="btn small">Save &amp; verify</button>
+</form>
+
+<h2 class="section">Postback URL</h2>
+<pre class="raw">{{ postback_url }}</pre>
+<p class="hint">Paste into <code>members.ogads.com/tools/postback-url</code>. Macros are
+  case sensitive; unrecognised ones are stripped.</p>
+
+<h2 class="section">Upstream</h2>
+<pre class="raw">endpoint : {{ ogads.endpoint }}
+mock     : {{ ogads.mock }}
+calls    : {{ ogads.upstream_calls }}
+cache    : {{ ogads.cache.entries }} entries, {{ ogads.cache.hits }} hits / {{ ogads.cache.misses }} misses
+error    : {{ (ogads.last_error.kind ~ ' — ' ~ ogads.last_error.message) if ogads.last_error else 'none' }}</pre>
+
+{% endblock %}

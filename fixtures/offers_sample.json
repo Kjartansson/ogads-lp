@@ -1,0 +1,72 @@
+{
+  "_note": "SAMPLE DATA for OGADS_MOCK=1 offline development. Shaped to match the live v2 response exactly, including the HTML-in-description and the Conversion/Traffic Restrictions/Targeting sections, so the parser is exercised offline. Offer ids, payouts and links are invented and the links go nowhere.",
+  "success": true,
+  "error": null,
+  "offers": [
+    {
+      "offerid": 9164,
+      "name": "Sample Strategy Game - CPE tutorial (Android, Free, INCENT, US, 156MB, 5.0)",
+      "name_short": "Sample Strategy Game",
+      "description": "</b>Build your own kingdom, discover powerful magic, and dominate the realm alongside your friends.\r\nConversion: </b>Install, Open, & Tutorial Complete\r\nTraffic Restrictions:</b> Custom Creatives; Adult Traffic; Push Notification Traffic; Instagram/Twitter Traffic\r\n Targeting: </b>OS 5.0+\r\n",
+      "adcopy": "Download, install and complete the tutorial to unlock this content.",
+      "picture": "https://via.placeholder.com/100x100.png?text=SG",
+      "payout": "0.39",
+      "country": "US",
+      "device": "Android",
+      "link": "https://example.invalid/aff_c?offer_id=9164",
+      "epc": "0.16220"
+    },
+    {
+      "offerid": 2993,
+      "name": "Sample Castle Battle - (Android, Free, INCENT, US, 113M)",
+      "name_short": "Sample Castle Battle",
+      "description": "A fast-paced mix of strategy and combat. Hire legions of powerful heroes and lead an army of mythical creatures.\r\nConversion:</b> Install & run for 30 seconds\r\n",
+      "adcopy": "Download and install this app then run it for 30 seconds to unlock this content.",
+      "picture": "https://via.placeholder.com/100x100.png?text=CB",
+      "payout": "0.34",
+      "country": "US",
+      "device": "Android",
+      "link": "https://example.invalid/aff_c?offer_id=2993",
+      "epc": "0.14296"
+    },
+    {
+      "offerid": 15696,
+      "name": "Sample Shopping App - (Android, Free, INCENT, UK,ES,NL,US,IT,FR,DE, 9M)",
+      "name_short": "Sample Shopping App",
+      "description": "</b>Thousands of brands and millions of products in one place.\r\nConversion:</b> Install & Open.\r\nTraffic Restrictions:</b> Custom Creatives; Adult Traffic; SMS Traffic\r\n",
+      "adcopy": "Download and install this app, then run it for 30 seconds to unlock this content.",
+      "picture": "https://via.placeholder.com/100x100.png?text=SA",
+      "payout": "0.22",
+      "country": "DE,FR,IT,NL,ES,UK,US",
+      "device": "Android",
+      "link": "https://example.invalid/aff_c?offer_id=15696",
+      "epc": "0.14196"
+    },
+    {
+      "offerid": 5930,
+      "name": "Sample App Match Survey - Incent, UK/CA, Dynamic Payout!",
+      "name_short": "Sample App Match",
+      "description": "",
+      "adcopy": "Match your interests to the best apps available and unlock your content!",
+      "picture": "https://via.placeholder.com/100x100.png?text=AM",
+      "payout": "0.28",
+      "country": "AU,CA,UK,US",
+      "device": "iPhone,Android",
+      "link": "https://example.invalid/aff_c?offer_id=5930",
+      "epc": "0.11598"
+    },
+    {
+      "offerid": 21004,
+      "name": "Sample Racing - (iPhone, Free, INCENT, US,CA, 210MB)",
+      "name_short": "Sample Racing",
+      "description": "</b>Race through 40 tracks in the newest arcade racer.\r\nConversion:</b> Install, open and complete race 3\r\nTargeting:</b> iOS 15+\r\n",
+      "adcopy": "Install and finish the third race to unlock this content.",
+      "picture": "https://via.placeholder.com/100x100.png?text=SR",
+      "payout": "1.10",
+      "country": "US,CA",
+      "device": "iPhone,iPad",
+      "link": "https://example.invalid/aff_c?offer_id=21004",
+      "epc": "0.31000"
+    }
+  ]
+}

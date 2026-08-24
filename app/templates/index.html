@@ -1,0 +1,56 @@
+{% from "_macros.html" import icon %}
+{% extends "base.html" %}
+{% block content %}
+
+{% if error %}
+  <p class="notice error">{{ error }}</p>
+{% elif not reviews %}
+  <p class="notice">
+    We don't have any reviews matching your country and device right now.
+    The line-up changes through the day &mdash; it's worth checking back.
+  </p>
+{% else %}
+  {% set lead = reviews[0] %}
+  <p class="kicker">App reviews</p>
+  <h1 class="masthead">Apps actually worth the install</h1>
+  <p class="dek">
+    Short, honest write-ups of free apps you can try today &mdash; what each one
+    does, and exactly what it asks of you before you tap download.
+    Currently showing what's available on {{ visitor.device_class }}
+    {%- if visitor.country %} in {{ visitor.country }}{% endif %}.
+  </p>
+
+  <article class="lead">
+    <a class="lead-link" href="/review/{{ lead.offer.slug }}{% if source %}?v={{ source }}{% endif %}">
+      {{ icon(lead.offer, large=true) }}
+      <div class="lead-body">
+        <p class="kicker">Editor's pick{% if lead.offer.id in new_ids %} &middot; <span class="new">New</span>{% endif %} &middot; {{ lead.read_minutes }} min read</p>
+        <h2>{{ lead.headline }}</h2>
+        <p class="dek">{{ lead.standfirst }}</p>
+        <p class="readmore">Read the review &rarr;</p>
+      </div>
+    </a>
+  </article>
+
+  {% if reviews|length > 1 %}
+    <h2 class="section">More reviews</h2>
+    <ul class="posts">
+    {% for r in reviews[1:] %}
+      <li class="post">
+        <a class="row" href="/review/{{ r.offer.slug }}{% if source %}?v={{ source }}{% endif %}">
+          {{ icon(r.offer) }}
+          <span class="meta">
+            <span class="name">{% if r.offer.id in new_ids %}<span class="new">New</span> {% endif %}{{ r.headline }}</span>
+            <span class="blurb">{{ r.standfirst }}</span>
+            <span class="tags">{{ r.effort }} effort &middot; {{ r.device_line }}
+              &middot; {{ r.read_minutes }} min read</span>
+          </span>
+        </a>
+      </li>
+    {% endfor %}
+    </ul>
+  {% endif %}
+
+{% endif %}
+
+{% endblock %}

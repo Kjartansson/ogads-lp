@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="referrer" content="no-referrer-when-downgrade">
+<title>{% block title %}{{ site_name }} &mdash; honest app reviews{% endblock %}</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="bar">
+  <a class="brand" href="/{% if source %}?v={{ source }}{% endif %}">{{ site_name }}</a>
+  {% if debug and visitor %}
+  <span class="dev" title="Identity sent to OGAds">
+    {{ visitor.device_class }} · {{ visitor.country or '??' }} · {{ visitor.ip }}{% if visitor.simulated %} · sim{% endif %}
+  </span>
+  {% endif %}
+</header>
+
+<main>
+{% block content %}{% endblock %}
+</main>
+
+<footer class="foot">
+  <p><strong>How this site makes money.</strong>
+     {{ disclosure or 'We earn a commission when you install an app through a link on this page.' }}</p>
+  <p>App availability, requirements and regions are set by each advertiser and
+     change through the day. We show what's live for your country and device.</p>
+</footer>
+</body>
+</html>

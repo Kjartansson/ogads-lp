@@ -1,0 +1,15 @@
+# Secrets. .env holds the live OGAds key, admin token, postback secret,
+# session signing key and the key that decrypts creators' stored API keys.
+.env
+.env.*
+!.env.example
+
+# Runtime data: click logs with visitor IPs, and creators' encrypted keys.
+data/
+exports/
+
+.venv/
+__pycache__/
+*.pyc
+*.sqlite
+*.db

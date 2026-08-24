@@ -1,0 +1,59 @@
+{% from "_macros.html" import art %}
+{% extends "base.html" %}
+{% block title %}{{ (picks[0][1] or picks[0][0].name_short) if picks else creator.username }}{% endblock %}
+{% block content %}
+{% if error %}<p class="notice">{{ error }}</p>
+{% elif not picks %}<p class="notice">This offer is not available for your country or device right now.</p>
+{% else %}
+{% set offer = picks[0][0] %}
+{% set review = reviews[0][0] %}
+<p class="kicker">{{ creator.display_name or creator.username }}'s pick</p>
+<h1>{{ picks[0][1] or review.headline }}</h1>
+<p class="dek">{{ review.standfirst }}</p>
+
+{% if media and media.hero %}
+  <img class="hero" src="{{ media.hero }}" alt="" loading="eager" referrerpolicy="no-referrer">
+{% endif %}
+
+{% if media and media.video %}
+<figure class="video">
+  <div class="frame">
+    <iframe src="{{ media.video.embed_url }}" title="{{ media.video.title }}"
+            loading="lazy" allowfullscreen
+            referrerpolicy="strict-origin-when-cross-origin"
+            allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"></iframe>
+  </div>
+  <figcaption>Gameplay by
+    <a href="{{ media.video.watch_url }}" rel="noopener nofollow" target="_blank">{{ media.video.channel }}</a>
+    on YouTube.</figcaption>
+</figure>
+{% endif %}
+
+<div class="appcard">
+  {{ art(offer, media, cls='icon lg placeholder') }}
+  <dl class="specs">
+    <div><dt>Runs on</dt><dd>{{ review.device_line }}</dd></div>
+    <div><dt>Effort</dt><dd><span class="pill {{ review.effort_class }}">{{ review.effort }}</span></dd></div>
+    {% if media and media.app and media.app.rating_display %}
+      <div><dt>Rating</dt><dd>{{ media.app.rating_display }}</dd></div>{% endif %}
+  </dl>
+</div>
+
+<h2>What you have to do</h2>
+<p class="requirement">{{ review.what_you_do }}</p>
+
+{% if media and media.shots %}
+<div class="shots">
+  {% for shot in media.shots[:5] %}
+    <img src="{{ shot }}" alt="" loading="lazy" referrerpolicy="no-referrer">
+  {% endfor %}
+</div>
+{% endif %}
+
+<a class="btn" href="/u/{{ creator.username }}/go/{{ offer.id }}"
+   rel="nofollow sponsored noopener">Get {{ offer.name_short }} &rarr;</a>
+{% endif %}
+
+<p class="disclosure">Advertising link. {{ creator.display_name or creator.username }}
+  may earn a commission if you install &mdash; it costs you nothing.</p>
+{% endblock %}

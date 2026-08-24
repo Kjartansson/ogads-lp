@@ -1,0 +1,40 @@
+{% from "_macros.html" import art %}
+{% extends "base.html" %}
+{% block title %}{{ creator.display_name or creator.username }} &mdash; app picks{% endblock %}
+{% block content %}
+<section class="profile">
+  <div class="avatar" aria-hidden="true">{{ (creator.display_name or creator.username)[:1]|upper }}</div>
+  <h1>{{ creator.display_name or creator.username }}</h1>
+  {% if creator.bio %}<p class="dek">{{ creator.bio }}</p>{% endif %}
+</section>
+
+{% if error %}
+  <p class="notice">{{ error }}</p>
+{% elif not picks %}
+  <p class="notice">No offers are available for your country or device right now.
+     They rotate through the day &mdash; try again later.</p>
+{% else %}
+  <ul class="linklist">
+  {% for offer, title in picks %}
+    <li>
+      <a class="linkbtn" href="/u/{{ creator.username }}/go/{{ offer.id }}"
+         rel="nofollow sponsored noopener">
+        {{ art(offer, media_by_offer.get(offer.id)) }}
+        <span class="linktext">
+          <span class="linktitle">{{ title or offer.name_short }}</span>
+          <span class="linkreq">{{ offer.requirement or offer.adcopy }}</span>
+        </span>
+        <span class="linkarrow" aria-hidden="true">&rarr;</span>
+      </a>
+    </li>
+  {% endfor %}
+  </ul>
+{% endif %}
+
+<p class="disclosure">
+  These are advertising links. {{ creator.display_name or creator.username }} may earn a
+  commission when you install an app from this page &mdash; it costs you nothing.
+  Requirements shown are the advertiser's own.
+</p>
+<p class="fineprint"><a href="/signup">Make a page like this &rarr;</a></p>
+{% endblock %}

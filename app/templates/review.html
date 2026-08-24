@@ -1,0 +1,123 @@
+{% from "_macros.html" import icon, art %}
+{% extends "base.html" %}
+{% block title %}{{ review.headline if review else 'Review not available' }} &mdash; {{ site_name }}{% endblock %}
+{% block content %}
+
+{% if not review %}
+  <p class="notice error">
+    {{ error or "We don't have this review available for your country or device right now." }}
+  </p>
+  <p><a class="back" href="/{% if source %}?v={{ source }}{% endif %}">&larr; Back to all reviews</a></p>
+{% else %}
+{% set offer = review.offer %}
+<article class="article">
+  <p class="kicker">App review &middot; {{ review.read_minutes }} min read</p>
+  <h1>{{ review.headline }}</h1>
+  <p class="dek">{{ review.standfirst }}</p>
+
+  <div class="appcard">
+    {{ art(offer, media, cls="icon lg placeholder") }}
+    <dl class="specs">
+      <div><dt>Runs on</dt><dd>{{ review.device_line }}</dd></div>
+      <div><dt>Available in</dt><dd>{{ review.availability }}</dd></div>
+      <div><dt>Effort</dt><dd><span class="pill {{ review.effort_class }}">{{ review.effort }}</span></dd></div>
+      {% if review.download_size %}<div><dt>Download</dt><dd>{{ review.download_size }}</dd></div>{% endif %}
+      {% if offer.targeting %}<div><dt>Requires</dt><dd>{{ offer.targeting }}</dd></div>{% endif %}
+    </dl>
+  </div>
+
+  {% if media and media.video %}
+  <figure class="video">
+    <div class="frame">
+      <iframe src="{{ media.video.embed_url }}" title="{{ media.video.title }}"
+              loading="lazy" allowfullscreen
+              referrerpolicy="strict-origin-when-cross-origin"
+              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture"></iframe>
+    </div>
+    <figcaption>
+      Gameplay footage by <a href="https://www.youtube.com/watch?v={{ media.video.id }}"
+        rel="noopener nofollow" target="_blank">{{ media.video.channel }}</a>
+      on YouTube &mdash; not our recording.
+    </figcaption>
+  </figure>
+  {% endif %}
+
+  <h2>What it is</h2>
+  <p>{{ review.what_it_is }}</p>
+
+  {% if media and media.app %}
+  {% set a = media.app %}
+  <div class="appfacts">
+    <h3>On the App Store</h3>
+    <dl class="specs">
+      <div><dt>Listed as</dt><dd>{{ a.title }}</dd></div>
+      <div><dt>Developer</dt><dd>{{ a.developer }}</dd></div>
+      {% if a.rating_display %}<div><dt>Rating</dt><dd>{{ a.rating_display }}</dd></div>{% endif %}
+      {% if a.genre %}<div><dt>Category</dt><dd>{{ a.genre }}</dd></div>{% endif %}
+      {% if a.content_rating %}<div><dt>Age rating</dt><dd>{{ a.content_rating }}</dd></div>{% endif %}
+      {% if a.size_mb %}<div><dt>Size</dt><dd>{{ a.size_mb }} MB</dd></div>{% endif %}
+      {% if a.price %}<div><dt>Price</dt><dd>{{ a.price }}</dd></div>{% endif %}
+      {% if a.updated %}<div><dt>Last updated</dt><dd>{{ a.updated }}</dd></div>{% endif %}
+    </dl>
+    <p class="fineprint">Figures are Apple's own, from the
+      {{ a.storefront|upper }} App Store listing. We have not rated this app ourselves.
+      {% if a.mature %}<strong>Apple rates this {{ a.content_rating }}.</strong>{% endif %}
+    </p>
+  </div>
+
+  {% if a.screenshots %}
+  <h2>Screenshots</h2>
+  <div class="shots">
+    {% for shot in a.screenshots %}
+      <img src="{{ shot }}" alt="{{ a.title }} screenshot {{ loop.index }}"
+           loading="lazy" referrerpolicy="no-referrer">
+    {% endfor %}
+  </div>
+  <p class="fineprint">Screenshots published by the developer on the App Store.</p>
+  {% endif %}
+  {% endif %}
+
+  <h2>What you actually have to do</h2>
+  <p>{{ review.what_you_do }}</p>
+  <p class="aside">That's the advertiser's own wording, and it's the whole
+     requirement &mdash; there isn't a second step hidden further in.</p>
+
+  <div class="proscons">
+    <div>
+      <h3>What's good</h3>
+      <ul class="pros">{% for p in review.pros %}<li>{{ p }}</li>{% endfor %}</ul>
+    </div>
+    <div>
+      <h3>Worth knowing</h3>
+      <ul class="cons">{% for c in review.cons %}<li>{{ c }}</li>{% endfor %}</ul>
+    </div>
+  </div>
+
+  <h2>Verdict</h2>
+  <blockquote class="verdict">{{ review.verdict }}</blockquote>
+
+  <a class="btn" href="/go/{{ offer.id }}{% if source %}?v={{ source }}{% endif %}"
+     rel="nofollow sponsored noopener">Get {{ offer.name_short }} &rarr;</a>
+  <p class="fineprint">Opens the advertiser's page. {{ disclosure }}</p>
+</article>
+
+{% if alternatives %}
+  <h2 class="section">More reviews</h2>
+  <ul class="posts">
+  {% for r in alternatives %}
+    <li class="post">
+      <a class="row" href="/review/{{ r.offer.slug }}{% if source %}?v={{ source }}{% endif %}">
+        {{ icon(r.offer) }}
+        <span class="meta">
+          <span class="name">{{ r.headline }}</span>
+          <span class="blurb">{{ r.standfirst }}</span>
+          <span class="tags">{{ r.effort }} effort &middot; {{ r.read_minutes }} min read</span>
+        </span>
+      </a>
+    </li>
+  {% endfor %}
+  </ul>
+{% endif %}
+{% endif %}
+
+{% endblock %}

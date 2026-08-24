@@ -1,0 +1,120 @@
+{% extends "base.html" %}
+{% block title %}Your page &mdash; {{ site_name }}{% endblock %}
+{% block content %}
+{% macro csrf_field() %}<input type="hidden" name="csrf" value="{{ csrf }}">{% endmacro %}
+
+{% if flash %}<p class="flash">{{ flash }}</p>{% endif %}
+
+<h1>Your page</h1>
+<p class="sub"><a class="adurl" href="{{ page_url }}">{{ page_url }}</a>
+  {% if creator.custom_domain and creator.domain_verified %}
+    &middot; also at <a class="adurl" href="https://{{ creator.custom_domain }}">{{ creator.custom_domain }}</a>
+  {% endif %}
+</p>
+
+{# ---- the traffic share, stated plainly and measured ---- #}
+<h2 class="section">Traffic share</h2>
+<div class="kpis">
+  <div class="kpi"><b>{{ stats.visits }}</b><span>visitors ({{ stats.window_days }}d)</span></div>
+  <div class="kpi"><b>{{ stats.visits_yours }}</b><span>saw your offers</span></div>
+  <div class="kpi"><b>{{ stats.visits_platform }}</b><span>saw ours</span></div>
+  <div class="kpi"><b>{{ '%.1f'|format(stats.platform_share_actual * 100) }}%</b><span>measured share</span></div>
+  <div class="kpi"><b>{{ creator.platform_share }}%</b><span>your agreed rate</span></div>
+  <div class="kpi"><b>{{ stats.clicks }}</b><span>offer clicks</span></div>
+</div>
+<p class="hint">Your agreed rate is <strong>{{ creator.platform_share }}%</strong> and the
+  measured figure above is what actually happened. They should track closely once you
+  have a few hundred visitors; small samples swing. Everything outside our share runs
+  on <strong>your</strong> OGAds key, so those conversions pay your account directly &mdash;
+  we never touch your revenue and never hold a payout.</p>
+
+{# ---- offers ---- #}
+<h2 class="section">Your offers</h2>
+{% if error %}<p class="notice">{{ error }}</p>{% endif %}
+{% if available %}
+<form method="post" action="/dashboard/links">
+  {{ csrf_field() }}
+  <p class="hint">Pick {{ min_links }}&ndash;{{ max_links }}. Only offers live for
+     <em>your</em> account and a visitor's country and device can appear, so the list
+     changes through the day.</p>
+  <ul class="picker">
+  {% for offer in available %}
+    <li>
+      <label class="pick">
+        <input type="checkbox" name="offer_id" value="{{ offer.id }}"
+               {% if offer.id in chosen_ids %}checked{% endif %}>
+        <span class="pickbody">
+          <span class="name">{{ offer.name_short }}</span>
+          <span class="blurb">{{ offer.requirement or offer.adcopy }}</span>
+          <span class="tags">${{ '%.2f'|format(offer.payout) }} &middot; EPC {{ '%.3f'|format(offer.epc) }}
+            &middot; {{ offer.devices|join(', ') }}{% if offer.is_rs %} &middot; RS{% endif %}</span>
+        </span>
+      </label>
+      <input class="titlein" name="title_{{ offer.id }}" maxlength="80"
+             value="{{ titles.get(offer.id, '') }}" placeholder="Your own wording (optional)">
+    </li>
+  {% endfor %}
+  </ul>
+  <button class="btn small">Save my offers</button>
+</form>
+{% endif %}
+
+{# ---- layout ---- #}
+<h2 class="section">Page layout</h2>
+<form method="post" action="/dashboard/template">
+  {{ csrf_field() }}
+  <ul class="picker">
+  {% for key, t in templates.items() %}
+    <li>
+      <label class="pick">
+        <input type="radio" name="page_template" value="{{ key }}"
+               {% if creator.page_template == key %}checked{% endif %}>
+        <span class="pickbody">
+          <span class="name">{{ t.name }}</span>
+          <span class="blurb">{{ t.blurb }}</span>
+          <span class="tags">best with {{ t.wants[0] }}{% if t.wants[1] != t.wants[0] %}&ndash;{{ t.wants[1] }}{% endif %} offer{{ '' if t.wants[1] == 1 else 's' }}</span>
+        </span>
+      </label>
+    </li>
+  {% endfor %}
+  </ul>
+  <button class="btn small">Use this layout</button>
+</form>
+
+{# ---- profile + key ---- #}
+<h2 class="section">Profile &amp; OGAds key</h2>
+<form class="card-form" method="post" action="/dashboard/settings">
+  {{ csrf_field() }}
+  <label>Display name <input name="display_name" maxlength="60" value="{{ creator.display_name }}"></label>
+  <label>Bio <span class="hint">one line, shown under your name</span>
+    <input name="bio" maxlength="280" value="{{ creator.bio }}"></label>
+  <label>OGAds API key
+    <span class="hint">{{ 'a key is saved — paste a new one to replace it' if has_key else 'required before your page can earn' }}</span>
+    <input name="api_key" type="password" autocomplete="off" placeholder="{{ '••••••••' if has_key else 'paste your key' }}"></label>
+  <p class="hint">Stored encrypted and used only to load offers for your visitors. It is
+     tested against OGAds before we save it, so a typo cannot silently blank your page.</p>
+  <button class="btn small">Save</button>
+</form>
+
+{# ---- custom domain ---- #}
+<h2 class="section">Custom domain</h2>
+<form class="card-form" method="post" action="/dashboard/domain">
+  {{ csrf_field() }}
+  <p class="hint" style="margin-bottom:12px">Point an <code>A</code> record at
+    <code>{{ server_ips or 'this server' }}</code>, then save it here. We check that it
+    really resolves to us before serving anything on it. Leave blank to remove.</p>
+  <label>Domain <input name="custom_domain" value="{{ creator.custom_domain }}"
+                       placeholder="links.yourdomain.com"></label>
+  {% if creator.custom_domain %}
+    <p class="hint">Status:
+      {% if creator.domain_verified %}<span class="badge ok">live</span>
+      {% else %}<span class="badge no_fill">not pointing here yet</span> &mdash; save again to re-check.{% endif %}
+    </p>
+  {% endif %}
+  <button class="btn small">Save domain</button>
+</form>
+
+<form method="post" action="/logout" style="margin-top:28px">
+  <button class="mini">Log out</button>
+</form>
+{% endblock %}

@@ -1,0 +1,385 @@
+/* An app-review blog read on a phone.
+   Type is the design: a serif display face for headlines against a sans
+   body, the way a magazine sets an article, so the page reads as editorial
+   rather than as a product grid. Measure is capped near 68 characters,
+   which is where line length stops fighting the reader. */
+
+:root {
+  --bg: #fffdf9;
+  --surface: #f4f1ea;
+  --line: #e3ded3;
+  --text: #1b1a17;
+  --muted: #6b6558;
+  --accent: #1f6feb;
+  --accent-text: #ffffff;
+  --kicker: #b04a1a;
+  --good: #1f7a3d;
+  --warn: #9a5b00;
+  --error: #b3261e;
+  --radius: 12px;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14130f;
+    --surface: #1e1c17;
+    --line: #322e26;
+    --text: #f0ece3;
+    --muted: #a49b8a;
+    --accent: #6aa0ff;
+    --accent-text: #0b0a08;
+    --kicker: #e88a52;
+    --good: #6ec98a;
+    --warn: #e0a851;
+    --error: #ff7b70;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 17px/1.65 var(--sans);
+  -webkit-text-size-adjust: 100%;
+}
+
+main { max-width: 40rem; margin: 0 auto; padding: 20px 18px 44px; }
+
+/* ---- chrome ---- */
+.bar {
+  display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  padding: 14px 18px; border-bottom: 1px solid var(--line); background: var(--bg);
+  position: sticky; top: 0; z-index: 5;
+}
+.brand {
+  font: 600 19px/1 var(--serif); letter-spacing: -0.01em;
+  color: var(--text); text-decoration: none;
+}
+.dev { font: 500 11px/1 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted); }
+
+/* ---- editorial type ---- */
+.kicker {
+  margin: 0 0 6px; color: var(--kicker);
+  font: 700 11.5px/1.3 var(--sans);
+  text-transform: uppercase; letter-spacing: 0.1em;
+}
+h1, .masthead {
+  font: 700 30px/1.2 var(--serif); letter-spacing: -0.015em; margin: 0 0 10px;
+}
+.article h1 { font-size: 29px; }
+h2 { font: 600 21px/1.3 var(--serif); letter-spacing: -0.01em; margin: 30px 0 8px; }
+h2.section {
+  font: 700 11.5px/1.3 var(--sans); text-transform: uppercase; letter-spacing: 0.1em;
+  color: var(--muted); border-top: 1px solid var(--line); padding-top: 18px; margin-top: 36px;
+}
+h3 { font: 600 14px/1.3 var(--sans); margin: 0 0 6px; }
+p { margin: 0 0 14px; }
+.dek { color: var(--muted); font-size: 16.5px; margin-bottom: 18px; }
+.aside {
+  color: var(--muted); font-size: 14.5px;
+  border-left: 2px solid var(--line); padding-left: 12px;
+}
+
+.notice {
+  margin: 24px 0; padding: 16px; border: 1px solid var(--line);
+  border-radius: var(--radius); background: var(--surface); color: var(--muted);
+}
+.notice.error { color: var(--error); }
+
+/* ---- lead story ---- */
+.lead { margin: 22px 0 10px; }
+.lead-link {
+  display: flex; gap: 14px; align-items: flex-start;
+  padding: 16px; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); text-decoration: none; color: inherit;
+}
+.lead-body { min-width: 0; }
+.lead-body h2 { font-size: 20px; margin: 0 0 6px; }
+.lead-body .dek { font-size: 15px; margin-bottom: 8px; }
+.readmore { margin: 0; color: var(--accent); font-size: 14px; font-weight: 600; }
+
+/* ---- post list ---- */
+.posts { list-style: none; margin: 0; padding: 0; }
+.post + .post { border-top: 1px solid var(--line); }
+.row {
+  display: flex; align-items: flex-start; gap: 13px;
+  padding: 16px 0; text-decoration: none; color: inherit;
+}
+.meta { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.name { font: 600 16.5px/1.35 var(--serif); letter-spacing: -0.01em; }
+.blurb {
+  color: var(--muted); font-size: 14px; line-height: 1.5;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.tags { color: var(--muted); font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.06em; }
+
+/* ---- icons ---- */
+.icon {
+  width: 54px; height: 54px; flex: 0 0 54px;
+  border-radius: 12px; object-fit: cover;
+  background: var(--line); border: 1px solid var(--line);
+}
+.icon.lg { width: 72px; height: 72px; flex-basis: 72px; border-radius: 16px; }
+.icon.placeholder {
+  display: grid; place-items: center; position: relative; overflow: hidden;
+  font: 600 22px/1 var(--serif); color: var(--muted);
+}
+/* The image covers the lettered tile; if it fails to load, onerror removes
+   it and the letter shows through. */
+.icon > img {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  object-fit: cover; border-radius: inherit;
+}
+
+/* ---- spec card ---- */
+.appcard {
+  display: flex; gap: 16px; align-items: flex-start;
+  margin: 20px 0 6px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.specs { margin: 0; flex: 1; min-width: 0; display: grid; gap: 7px; }
+.specs > div { display: flex; justify-content: space-between; gap: 12px; }
+.specs dt { color: var(--muted); font-size: 13px; white-space: nowrap; }
+.specs dd { margin: 0; font-size: 13.5px; font-weight: 600; text-align: right; }
+.pill {
+  display: inline-block; padding: 1px 9px; border-radius: 999px;
+  font-size: 12px; font-weight: 700;
+  background: color-mix(in srgb, var(--good) 16%, transparent); color: var(--good);
+}
+.pill.medium { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--warn); }
+.pill.high   { background: color-mix(in srgb, var(--error) 15%, transparent); color: var(--error); }
+
+/* ---- pros / cons ---- */
+.proscons { display: grid; gap: 18px; margin: 24px 0 6px; }
+@media (min-width: 560px) { .proscons { grid-template-columns: 1fr 1fr; gap: 24px; } }
+.pros, .cons { list-style: none; margin: 0; padding: 0; font-size: 15px; }
+.pros li, .cons li { padding-left: 22px; position: relative; margin-bottom: 7px; line-height: 1.5; }
+.pros li::before { content: "+"; position: absolute; left: 4px; color: var(--good); font-weight: 700; }
+.cons li::before { content: "!"; position: absolute; left: 6px; color: var(--warn); font-weight: 700; }
+
+.verdict {
+  margin: 10px 0 4px; padding: 2px 0 2px 16px;
+  border-left: 3px solid var(--kicker);
+  font: 400 18px/1.5 var(--serif); color: var(--text);
+}
+
+/* ---- call to action ---- */
+.btn {
+  display: block; margin: 26px 0 10px; padding: 16px 20px;
+  background: var(--accent); color: var(--accent-text);
+  border-radius: var(--radius); text-align: center;
+  font: 650 16.5px/1 var(--sans); text-decoration: none;
+}
+.btn:active { filter: brightness(0.92); }
+
+.fineprint, .disclosure, .foot p { color: var(--muted); font-size: 13px; line-height: 1.5; }
+.disclosure { margin-top: 30px; padding-top: 16px; border-top: 1px solid var(--line); }
+.back { color: var(--accent); }
+
+.foot {
+  max-width: 40rem; margin: 0 auto; padding: 22px 18px 36px;
+  border-top: 1px solid var(--line);
+}
+.foot p { margin-bottom: 8px; }
+
+/* ---- admin ---- */
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 8px; margin: 16px 0 8px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 12px 10px; text-align: center; }
+.kpi b { display: block; font: 700 20px/1.2 var(--sans); letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.kpi span { display: block; margin-top: 3px; color: var(--muted); font-size: 11.5px; }
+
+/* Source tags are long single tokens (tt-21004-sample-racing) that wrap into
+   an unreadable column on a phone. Keep them intact and let the table
+   scroll inside its own box rather than the page scrolling sideways. */
+.scroll { overflow-x: auto; margin: 6px 0 4px; }
+.grid { width: 100%; border-collapse: collapse; font-size: 14px; }
+.grid td:first-child { white-space: nowrap; }
+.grid td:first-child .hint { white-space: normal; }
+/* Ad URLs are single long tokens; wrapping them mid-path makes them
+   impossible to copy correctly into an ad platform. */
+.grid td .adurl { white-space: nowrap; font-family: ui-monospace, Menlo, monospace; font-size: 11.5px; }
+.grid th, .grid td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.grid th { color: var(--muted); font: 600 11.5px/1.3 var(--sans); text-transform: uppercase; letter-spacing: 0.05em; }
+.grid td.n, .grid th:not(:first-child) { text-align: right; font-variant-numeric: tabular-nums; }
+.grid tbody tr:hover { background: var(--surface); }
+
+.hint { color: var(--muted); font-size: 12px; font-weight: 400; text-transform: none; letter-spacing: 0; }
+.two { display: grid; grid-template-columns: 1fr; gap: 20px; }
+@media (min-width: 620px) { .two { grid-template-columns: 1fr 1fr; } }
+.raw {
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 12px; overflow-x: auto;
+  font: 12.5px/1.6 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--muted);
+}
+
+/* ---- admin controls ---- */
+.flash {
+  margin: 14px 0; padding: 12px 14px; border-radius: 10px;
+  background: color-mix(in srgb, var(--good) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--good) 40%, var(--line));
+  font-size: 14.5px;
+}
+.alarm {
+  margin: 12px 0; padding: 14px; border-radius: 10px;
+  background: color-mix(in srgb, var(--error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--error) 45%, var(--line));
+  color: var(--error); font-size: 14.5px;
+}
+.badge {
+  display: inline-block; padding: 2px 9px; border-radius: 999px;
+  font: 700 11.5px/1.6 var(--sans); text-transform: uppercase; letter-spacing: 0.04em;
+  background: var(--line); color: var(--muted); white-space: nowrap;
+}
+.badge.ok       { background: color-mix(in srgb, var(--good) 18%, transparent); color: var(--good); }
+.badge.fallback,
+.badge.pinned_dead { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn); }
+.badge.degraded,
+.badge.no_fill  { background: color-mix(in srgb, var(--error) 16%, transparent); color: var(--error); }
+.badge.gone     { background: color-mix(in srgb, var(--error) 12%, transparent); color: var(--error); }
+.grid tr.gone td { opacity: 0.55; }
+
+.card-form {
+  margin: 18px 0 8px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.card-form h3 { margin-bottom: 12px; }
+.card-form label { display: block; margin-bottom: 12px; font-size: 13.5px; color: var(--muted); }
+.card-form input {
+  display: block; width: 100%; margin-top: 5px; padding: 10px 12px;
+  font: 15px var(--sans); color: var(--text);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 9px;
+}
+.card-form input:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.btn.small { margin: 4px 0 0; padding: 12px 18px; font-size: 15px; }
+.mini {
+  padding: 6px 12px; border-radius: 999px; cursor: pointer;
+  font: 600 12.5px var(--sans); color: var(--text);
+  background: var(--bg); border: 1px solid var(--line);
+}
+.mini:hover { border-color: var(--accent); color: var(--accent); }
+.grid form { margin: 0; }
+
+/* "New" is shown only when the availability history is old enough to prove
+   it -- see store.freshness. An always-on NEW badge is just decoration. */
+.new {
+  display: inline-block; padding: 1px 7px; border-radius: 4px;
+  background: var(--kicker); color: var(--bg);
+  font: 700 10.5px/1.6 var(--sans); text-transform: uppercase; letter-spacing: 0.06em;
+  vertical-align: 2px;
+}
+
+/* ---- embedded gameplay + store facts ---- */
+.video { margin: 22px 0 6px; }
+.video .frame {
+  position: relative; width: 100%; aspect-ratio: 16 / 9;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius); overflow: hidden;
+}
+.video iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.video figcaption { margin-top: 8px; color: var(--muted); font-size: 12.5px; }
+.video figcaption a { color: var(--accent); }
+
+.appfacts {
+  margin: 20px 0 6px; padding: 16px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.appfacts h3 { margin-bottom: 10px; }
+.appfacts .fineprint { margin: 12px 0 0; }
+
+/* Horizontal strip: phone screenshots are tall, so scrolling sideways beats
+   stacking six full-height images down the article. */
+.shots {
+  display: flex; gap: 10px; overflow-x: auto;
+  padding-bottom: 6px; scroll-snap-type: x mandatory;
+}
+.shots img {
+  height: 300px; width: auto; flex: 0 0 auto; scroll-snap-align: start;
+  border-radius: 10px; border: 1px solid var(--line); background: var(--surface);
+}
+
+/* ---- creator pages ---- */
+.profile { text-align: center; margin: 12px 0 26px; }
+.profile h1 { margin-bottom: 6px; }
+.profile .dek { margin: 0 auto; max-width: 32rem; }
+.avatar {
+  width: 76px; height: 76px; margin: 0 auto 14px;
+  display: grid; place-items: center; border-radius: 50%;
+  background: var(--surface); border: 1px solid var(--line);
+  font: 600 30px/1 var(--serif); color: var(--muted);
+}
+
+/* Big single-column tap targets: this page exists to be opened inside a
+   TikTok in-app browser, one thumb, one hand. */
+.linklist { list-style: none; margin: 0; padding: 0; }
+.linklist li + li { margin-top: 10px; }
+.linkbtn {
+  display: flex; align-items: center; gap: 13px;
+  min-height: 68px; padding: 13px 16px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; text-decoration: none; color: inherit;
+}
+.linkbtn:active { transform: scale(0.99); background: color-mix(in srgb, var(--surface) 88%, var(--text)); }
+.linkicon {
+  width: 44px; height: 44px; flex: 0 0 44px; display: grid; place-items: center;
+  border-radius: 11px; background: var(--line); color: var(--muted);
+  font: 600 18px/1 var(--serif);
+}
+.linkicon.lg { width: 54px; height: 54px; flex-basis: 54px; margin-bottom: 10px; }
+.linktext { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1; }
+.linktitle { font-weight: 600; letter-spacing: -0.01em; }
+.linkreq {
+  color: var(--muted); font-size: 13px; line-height: 1.45;
+  display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+.linkarrow { color: var(--muted); font-size: 20px; }
+
+.cardgrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.appcardlink {
+  display: flex; flex-direction: column; gap: 4px; padding: 14px;
+  background: var(--surface); border: 1px solid var(--line);
+  border-radius: 14px; text-decoration: none; color: inherit;
+}
+.appcardlink .cta { margin-top: 10px; align-self: flex-start; }
+
+/* ---- dashboard pickers ---- */
+.picker { list-style: none; margin: 0 0 14px; padding: 0; }
+.picker li { padding: 12px 0; border-bottom: 1px solid var(--line); }
+.pick { display: flex; gap: 12px; align-items: flex-start; cursor: pointer; }
+.pick input { margin-top: 4px; width: 20px; height: 20px; flex: 0 0 20px; accent-color: var(--accent); }
+.pickbody { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.titlein {
+  display: block; width: 100%; margin-top: 8px; padding: 8px 10px;
+  font: 14px var(--sans); color: var(--text);
+  background: var(--bg); border: 1px solid var(--line); border-radius: 8px;
+}
+.card-form label.check { display: flex; gap: 10px; align-items: flex-start; color: var(--text); }
+.card-form label.check input { width: 20px; height: 20px; flex: 0 0 20px; margin-top: 2px; accent-color: var(--accent); }
+
+.deal {
+  margin: 20px 0; padding: 18px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+}
+.deal h2 { margin-top: 0; }
+.deal ul { margin-bottom: 12px; }
+
+/* Real app artwork sits on top of the lettered tile; if the image 404s,
+   onerror removes it and the letter shows through. */
+.linkicon { position: relative; overflow: hidden; }
+.linkicon > img { position: absolute; inset: 0; width: 100%; height: 100%;
+                  object-fit: cover; border-radius: inherit; }
+.icon.placeholder > img { position: absolute; inset: 0; width: 100%; height: 100%;
+                          object-fit: cover; border-radius: inherit; }
+.hero {
+  display: block; width: 100%; height: auto; margin: 18px 0 6px;
+  border-radius: var(--radius); border: 1px solid var(--line);
+}
+.cardshot { display: block; margin: -14px -14px 12px; }
+.cardshot img {
+  display: block; width: 100%; height: 132px; object-fit: cover;
+  border-radius: 13px 13px 0 0;
+}

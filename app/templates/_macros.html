@@ -1,0 +1,25 @@
+{# Offer icon with a fallback that needs no scripting gymnastics.
+
+   The lettered tile is always rendered; the image sits on top of it. If the
+   third-party CDN we do not control fails, onerror simply removes the image
+   and the tile underneath is revealed. No DOM surgery, nothing to escape. #}
+{% macro icon(offer, large=false) -%}
+{%- set cls = 'icon lg' if large else 'icon' -%}
+{%- set size = 72 if large else 54 -%}
+<span class="{{ cls }} placeholder" aria-hidden="true">{{ offer.name_short[:1]|upper
+  }}{% if offer.picture %}<img src="{{ offer.picture }}" alt="" loading="lazy"
+     width="{{ size }}" height="{{ size }}" onerror="this.remove()">{% endif %}</span>
+{%- endmacro %}
+
+{# App artwork, best source first.
+
+   Our own art beats Apple's 512px icon, which beats the OGAds thumbnail —
+   theirs is only 100px and looks soft on a retina phone. The lettered tile
+   sits underneath as always, so a dead image URL degrades instead of
+   leaving a broken-image glyph. #}
+{% macro art(offer, media=None, cls='linkicon') -%}
+{%- set src = (media.icon if media and media.icon else '') or offer.picture -%}
+<span class="{{ cls }}" aria-hidden="true">{{ offer.name_short[:1]|upper
+  }}{% if src %}<img src="{{ src }}" alt="" loading="lazy" referrerpolicy="no-referrer"
+     onerror="this.remove()">{% endif %}</span>
+{%- endmacro %}

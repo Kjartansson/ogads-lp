@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}Create your link page &mdash; {{ site_name }}{% endblock %}
+{% block content %}
+<p class="kicker">For creators</p>
+<h1>One link. Your offers. Your account.</h1>
+<p class="dek">Pick 3&ndash;6 app offers, get a single page for your TikTok or YouTube
+   bio, and keep the earnings &mdash; conversions pay your OGAds account directly.
+   We never hold your money.</p>
+
+<div class="deal">
+  <h2>The deal, in plain terms</h2>
+  <ul class="pros">
+    <li>Your OGAds API key stays yours. Your visitors see <em>your</em> offers and
+        conversions land in <em>your</em> account.</li>
+    <li>We never take a cut of your revenue and never process a payout.</li>
+  </ul>
+  <ul class="cons">
+    <li><strong>{{ share }}% of your visitors are served our offers instead of yours.</strong>
+        That is how hosting is paid for.</li>
+    <li>Your dashboard shows the real measured number every day, so you can hold us
+        to it. Delete your page whenever you want.</li>
+  </ul>
+</div>
+
+{% if errors %}
+  <div class="alarm"><strong>Please fix:</strong>
+    <ul>{% for e in errors %}<li>{{ e }}</li>{% endfor %}</ul></div>
+{% endif %}
+
+<form class="card-form" method="post" action="/signup">
+  <label>Username <span class="hint">your page will be /u/&lt;username&gt;</span>
+    <input name="username" required minlength="3" maxlength="30"
+           value="{{ values.username or '' }}" placeholder="emma"></label>
+  <label>Email
+    <input name="email" type="email" required value="{{ values.email or '' }}"></label>
+  <label>Password <span class="hint">at least 10 characters</span>
+    <input name="password" type="password" required minlength="10" autocomplete="new-password"></label>
+  <label>OGAds API key <span class="hint">optional now, required before your page can earn</span>
+    <input name="api_key" type="password" autocomplete="off" placeholder="paste it here or add it later"></label>
+  <label class="check">
+    <input type="checkbox" name="accept" value="1" required>
+    <span>I understand that {{ share }}% of my visitors will be shown
+      {{ site_name }}'s offers instead of mine.</span></label>
+  <button class="btn small">Create my page</button>
+</form>
+<p class="fineprint">Already have an account? <a href="/login">Log in</a>.</p>
+{% endblock %}
