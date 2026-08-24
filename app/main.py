@@ -75,6 +75,26 @@ app.include_router(creators_router)
 
 
 @app.middleware("http")
+async def head_requests(request: Request, call_next):
+    """Answer HEAD like GET.
+
+    FastAPI registers only the methods you declare -- unlike plain Starlette
+    it does not add HEAD alongside GET -- so every route 405s for HEAD.
+    Uptime monitors, link checkers and some crawlers lead with HEAD, and a
+    405 reads as "the site is broken". The response body is dropped, since
+    a HEAD response must not carry one.
+    """
+    if request.scope["method"] != "HEAD":
+        return await call_next(request)
+    request.scope["method"] = "GET"
+    response = await call_next(request)
+    return Response(status_code=response.status_code,
+                    headers={k: v for k, v in response.headers.items()
+                             if k.lower() != "content-length"},
+                    media_type=response.media_type)
+
+
+@app.middleware("http")
 async def custom_domain_routing(request: Request, call_next):
     """Serve a creator's page at the root of their own verified domain.
 
