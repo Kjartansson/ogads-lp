@@ -15,12 +15,13 @@ Route map
 """
 from __future__ import annotations
 
+import hmac
 import logging
 import re
 import sqlite3
 import time
 import uuid
-from urllib.parse import quote
+from urllib.parse import quote, urlencode
 from contextlib import asynccontextmanager
 
 from fastapi import BackgroundTasks, FastAPI, Form, Request, Response
@@ -29,8 +30,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 
 import httpx
+from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
 
 from . import campaigns, editorial, media as media_mod, store, visitor as visitor_mod
+from . import accounts
 from . import config
 from .config import BASE_DIR, settings
 from .models import Offer
@@ -92,6 +95,35 @@ async def head_requests(request: Request, call_next):
                     headers={k: v for k, v in response.headers.items()
                              if k.lower() != "content-length"},
                     media_type=response.media_type)
+
+
+@app.middleware("http")
+async def admin_token_to_cookie(request: Request, call_next):
+    """Trade a valid ?token= for a signed cookie, then redirect to the bare URL.
+
+    The admin token used to travel in the query string on EVERY admin request.
+    This host sits behind a Cloudflare tunnel and Cloudflare logs full request
+    URIs, so the token was being written to a third party's logs continuously;
+    it also lands in browser history and in the Referer of any outbound link
+    from a dashboard page. The error page even instructed the operator to
+    append it.
+
+    Kept backward compatible on purpose -- an existing `?token=...` bookmark
+    still works. It is just spent once now: the response sets an httponly
+    cookie and 303s to the same path without the token, so the secret leaves
+    the address bar immediately and never appears in a subsequent request.
+    """
+    if request.url.path.startswith("/admin") and _token_ok(request.query_params.get("token", "")):
+        params = [(k, v) for k, v in request.query_params.multi_items() if k != "token"]
+        target = request.url.path + ("?" + urlencode(params) if params else "")
+        resp = RedirectResponse(target, status_code=303)
+        resp.set_cookie(
+            ADMIN_COOKIE, _issue_admin_cookie(), max_age=ADMIN_SESSION_MAX_AGE,
+            httponly=True, samesite="lax",
+            secure=config.base_url().startswith("https"),
+        )
+        return resp
+    return await call_next(request)
 
 
 @app.middleware("http")
@@ -190,9 +222,44 @@ async def _load(request: Request, *, source: str = "", session_id: str = "",
     return eligible
 
 
+ADMIN_COOKIE = "ogads_admin"
+_ADMIN_SALT = "admin-session"
+ADMIN_SESSION_MAX_AGE = 60 * 60 * 24 * 30
+
+
+def _issue_admin_cookie() -> str:
+    return URLSafeTimedSerializer(accounts._app_secret(), salt=_ADMIN_SALT).dumps("admin")
+
+
+def _valid_admin_cookie(raw: str) -> bool:
+    if not raw:
+        return False
+    try:
+        URLSafeTimedSerializer(accounts._app_secret(), salt=_ADMIN_SALT).loads(
+            raw, max_age=ADMIN_SESSION_MAX_AGE
+        )
+        return True
+    except (BadSignature, SignatureExpired, Exception):  # noqa: B014 - never 500 on a bad cookie
+        return False
+
+
+def _token_ok(supplied: str) -> bool:
+    """Constant-time compare. `==` on a secret is a habit worth not having."""
+    if not settings.admin_token or not supplied:
+        return False
+    return hmac.compare_digest(supplied, settings.admin_token)
+
+
 def _authed(request: Request) -> bool:
-    token = request.query_params.get("token") or request.headers.get("x-admin-token", "")
-    return bool(settings.admin_token) and token == settings.admin_token
+    """A signed cookie, the header, or -- once -- the query string.
+
+    The query-string path is kept so existing `?token=...` bookmarks keep
+    working, but admin_token_to_cookie() below immediately trades it for a
+    cookie and redirects to the bare URL. See that middleware for why.
+    """
+    if _valid_admin_cookie(request.cookies.get(ADMIN_COOKIE, "")):
+        return True
+    return _token_ok(request.query_params.get("token") or request.headers.get("x-admin-token", ""))
 
 
 # --------------------------------------------------------------------- JSON
@@ -539,7 +606,10 @@ def _postback_url() -> str:
 
 _LOGIN_HINT = (
     "<p style='font:16px system-ui;padding:2rem'>Unauthorized. Append "
-    "<code>?token=&lt;ADMIN_TOKEN&gt;</code> — the value is in your <code>.env</code>.</p>"
+    "<code>?token=&lt;ADMIN_TOKEN&gt;</code> once — the value is in your "
+    "<code>.env</code>. It is exchanged for a cookie and dropped from the URL "
+    "immediately, so it is not left in your history or in Cloudflare's logs. "
+    "Prefer an <code>X-Admin-Token</code> header for scripted access.</p>"
 )
 
 
