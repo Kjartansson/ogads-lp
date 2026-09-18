@@ -71,10 +71,61 @@ async def lifespan(app: FastAPI):
     await client.shutdown()
 
 
-app = FastAPI(title="OGAds Offer Service", lifespan=lifespan, docs_url="/api/docs")
+# The schema and the interactive docs are OFF.
+#
+# This app is published through a Cloudflare tunnel, so "it is only a test
+# environment" is not a boundary -- test.voomreel.com is reachable by anyone.
+# /openapi.json was served to the public and enumerated all 29 routes,
+# including /postback and the whole /dashboard tree: a free map of the attack
+# surface, and the same leak that was found and closed on voomreel.com itself
+# on 2026-09-16. /api/docs rendered the same schema as a UI.
+#
+# Nothing here consumes the schema at runtime -- it existed only for manual
+# poking, which `curl` against a known route does just as well.
+app = FastAPI(
+    title="OGAds Offer Service",
+    lifespan=lifespan,
+    docs_url=None,
+    redoc_url=None,
+    openapi_url=None,
+)
 from .routes_creators import router as creators_router
 
 app.include_router(creators_router)
+
+
+# --- keep the test host out of the index ------------------------------------
+#
+# This deployment answers on test.voomreel.com, a subdomain of the live brand,
+# and it was fully crawlable: no robots.txt, no noindex, nothing. A staging
+# copy of an affiliate funnel indexed under the main domain is bad on two
+# counts -- it competes with voomreel.com on a domain that is already short of
+# crawl budget, and it publishes a funnel that was never meant to be found.
+#
+# Keyed on the hostname rather than a setting, so a future production host is
+# unaffected without anyone having to remember to flip a flag. The header and
+# the file agree, because Google honours the header on pages it reaches by a
+# route robots.txt never described.
+def _is_noindex_host(request: Request) -> bool:
+    host = (request.headers.get("host") or "").split(":")[0].lower()
+    return host.startswith("test.") or host.startswith("staging.")
+
+
+@app.middleware("http")
+async def noindex_test_host(request: Request, call_next):
+    response = await call_next(request)
+    if _is_noindex_host(request):
+        response.headers["X-Robots-Tag"] = "noindex, nofollow"
+    return response
+
+
+@app.get("/robots.txt", include_in_schema=False)
+async def robots_txt(request: Request) -> Response:
+    if _is_noindex_host(request):
+        body = "User-agent: *\nDisallow: /\n"
+    else:
+        body = "User-agent: *\nAllow: /\n"
+    return Response(body, media_type="text/plain")
 
 
 @app.middleware("http")
