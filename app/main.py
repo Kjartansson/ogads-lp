@@ -103,9 +103,18 @@ app.include_router(creators_router)
 # crawl budget, and it publishes a funnel that was never meant to be found.
 #
 # Keyed on the hostname rather than a setting, so a future production host is
-# unaffected without anyone having to remember to flip a flag. The header and
-# the file agree, because Google honours the header on pages it reaches by a
-# route robots.txt never described.
+# unaffected without anyone having to remember to flip a flag.
+#
+# The HEADER is what actually works here, and the robots.txt route below is
+# NOT reached on this host: Cloudflare serves its own managed robots.txt for
+# this zone and intercepts the path before it reaches the origin (verified
+# 2026-09-18 -- it returns CF's content-signals file, which carries no
+# directives at all). The route is kept for a host without that feature.
+#
+# That split is the right way round regardless. X-Robots-Tag deindexes;
+# Disallow only stops crawling, and a crawler told not to fetch a page can
+# never see the noindex on it -- so a Disallow would have been the weaker
+# control and would have blocked the stronger one.
 def _is_noindex_host(request: Request) -> bool:
     host = (request.headers.get("host") or "").split(":")[0].lower()
     return host.startswith("test.") or host.startswith("staging.")
